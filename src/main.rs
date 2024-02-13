@@ -7,7 +7,7 @@ async fn main() -> io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:2606").await?;
 
     loop {
-        let client = listener.accept().await?;
+        let (client, _) = listener.accept().await?;
         let server = TcpStream::connect(server_addr).await?;
 
         let (mut cread, mut cwrite) = client.into_split();
@@ -15,6 +15,11 @@ async fn main() -> io::Result<()> {
 
         let c2s = io::copy(&mut cread, &mut cwrite);
         let s2s = io::copy(&mut sread, &mut swrite);
+
+        join! {
+            _ = tokio::spawn(async move { io::copy(&mut cread, &mut cwrite).await }),
+            _ = tokio::spawn(async move { io::copy(&mut sread, &mut swrite).await }),
+        }
 
     }
 }
