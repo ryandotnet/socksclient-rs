@@ -1,4 +1,4 @@
-use tokio::io;
+use tokio::{io, join};
 use tokio::net::{TcpListener, TcpStream};
 
 #[tokio::main]
@@ -9,5 +9,12 @@ async fn main() -> io::Result<()> {
     loop {
         let client = listener.accept().await?;
         let server = TcpStream::connect(server_addr).await?;
+
+        let (mut cread, mut cwrite) = client.into_split();
+        let (mut sread, mut swrite) = server.into_split();
+
+        let c2s = io::copy(&mut cread, &mut cwrite);
+        let s2s = io::copy(&mut sread, &mut swrite);
+
     }
 }
