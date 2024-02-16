@@ -13,9 +13,9 @@ async fn main() -> io::Result<()> {
 }
 
 async fn handle_client(client: TcpStream) -> io::Result<()> {
-    let server_addr = "175.45.183.112:1709";
+    let svr_addr = "175.45.183.112:1709";
 
-    let server = TcpStream::connect(server_addr).await?;
+    let server = TcpStream::connect(svr_addr).await?;
     server.set_nodelay(true)?;
 
     println!("New connection opened.");
