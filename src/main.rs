@@ -1,6 +1,8 @@
 use tokio::io;
 use tokio::net::{TcpListener, TcpStream};
 
+mod socks;
+
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:2606").await?;
@@ -24,8 +26,6 @@ async fn handle_client(client: TcpStream) -> io::Result<()> {
 
     Ok(())
 }
-
-// async fn auth_client() {}
 
 async fn exchange_data(mut client: TcpStream, mut server: TcpStream) -> io::Result<()> {
     tokio::spawn(async move { io::copy_bidirectional(&mut client, &mut server).await });
