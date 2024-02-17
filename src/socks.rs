@@ -5,9 +5,9 @@ use tokio::{
     net::TcpStream,
 };
 
-pub struct Socks5;
+pub struct Client;
 
-impl Socks5 {
+impl Client {
     pub async fn handshake(mut server: TcpStream) -> io::Result<()> {
         let greeting = vec![5, 1, 2];
         server.write_all(&greeting).await?;
@@ -17,7 +17,7 @@ impl Socks5 {
 
         match response[1] {
             2 => {
-                Socks5::authenticate(server).await?;
+                Client::authenticate(server).await?;
             }
             _ => println!("Handshake Failed!"),
         }
