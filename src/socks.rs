@@ -34,7 +34,6 @@ impl Client {
         request.extend_from_slice(user.as_bytes());
         request.push(pass.len() as u8);
         request.extend_from_slice(pass.as_bytes());
-
         server.write_all(&request).await?;
 
         let mut response = [0, 2];
@@ -54,7 +53,6 @@ impl Client {
         let mut request = vec![5, 1, 0, 1];
         request.extend_from_slice(&ip.octets());
         request.extend_from_slice(&port.to_be_bytes());
-
         server.write_all(&request).await?;
 
         let mut response = vec![0, 2];
