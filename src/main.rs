@@ -1,10 +1,11 @@
+use socks5::Socks5Error;
 use tokio::io;
 use tokio::net::{TcpListener, TcpStream};
 
 mod socks5;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<(), Socks5Error> {
     let listener = TcpListener::bind("127.0.0.1:2606").await?;
     println!("Listening on: {}\n", listener.local_addr()?);
 
@@ -14,13 +15,13 @@ async fn main() -> io::Result<()> {
     }
 }
 
-async fn handle_client(client: TcpStream) -> io::Result<()> {
+async fn handle_client(client: TcpStream) -> Result<(), Socks5Error> {
     let svr_addr = "175.45.183.112:1709";
 
     let mut server = TcpStream::connect(svr_addr).await?;
     server.set_nodelay(true)?;
 
-    match socks5::Client::handshake(&mut server).await?;
+    socks5::Client::handshake(&mut server).await?;
 
     exchange_data(client, server).await?;
 

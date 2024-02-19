@@ -5,7 +5,8 @@ use tokio::{
     net::TcpStream,
 };
 
-enum Socks5Error {
+#[derive(Debug)]
+pub enum Socks5Error {
     HandshakeFailed,
     AuthenticationFailed,
     RequestFailed,
@@ -42,7 +43,7 @@ impl Client {
         match response[1] {
             2 => Client::authenticate(server).await?,
             _ => return Err(Socks5Error::HandshakeFailed),
-        }
+        };
 
         Ok(())
     }
