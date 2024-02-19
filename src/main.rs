@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::ErrorKind;
 use std::time::Duration;
 
 use socks5::Socks5Error;
@@ -17,7 +18,12 @@ async fn main() -> io::Result<()> {
         let _ = match handle_client(client).await {
             Ok(_) => Ok(()),
             Err(err) => {
-                eprintln!("{}", err);
+                match err.kind() {
+                    ErrorKind::TimedOut => {
+                        eprintln!("Failed to connect to server: Connection timed out.")
+                    }
+                    _ => eprintln!("Failed to connect to server. Error: {}", err),
+                }
                 Err(err)
             }
         };
@@ -25,7 +31,7 @@ async fn main() -> io::Result<()> {
 }
 
 async fn handle_client(client: TcpStream) -> io::Result<()> {
-    let server_addr = "100.45.183.112:1709";
+    let server_addr = "69.45.183.112:1709";
 
     let server = TcpStream::connect(server_addr).await?;
 
@@ -34,10 +40,6 @@ async fn handle_client(client: TcpStream) -> io::Result<()> {
     // exchange_data(client, server).await?;
 
     Ok(())
-}
-
-async fn test() {
-    println!("Success!");
 }
 
 async fn exchange_data(mut client: TcpStream, mut server: TcpStream) -> io::Result<()> {
