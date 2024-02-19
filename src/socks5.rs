@@ -1,7 +1,7 @@
 use std::{fmt, net::Ipv4Addr};
 
 use tokio::{
-    io::{self, AsyncReadExt, AsyncWriteExt},
+    io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
 };
 
@@ -13,6 +13,8 @@ pub enum Socks5Error {
     IoError(std::io::ErrorKind),
 }
 
+//impl std::error::Error for Socks5Error {}
+
 impl From<std::io::Error> for Socks5Error {
     fn from(err: std::io::Error) -> Self {
         Socks5Error::IoError(err.kind())
@@ -22,10 +24,10 @@ impl From<std::io::Error> for Socks5Error {
 impl fmt::Display for Socks5Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Socks5Error::HandshakeFailed => write!(f, "Handshake failed."),
-            Socks5Error::AuthenticationFailed => write!(f, "Authentication failed."),
-            Socks5Error::RequestFailed => write!(f, "Request failed."),
-            Self::IoError(e) => write!(f, "IO Error: {}", e),
+            Self::HandshakeFailed => write!(f, "Handshake failed."),
+            Self::AuthenticationFailed => write!(f, "Authentication failed."),
+            Self::RequestFailed => write!(f, "Request failed."),
+            Self::IoError(error) => write!(f, "IO Error: {}", error),
         }
     }
 }
@@ -84,7 +86,7 @@ impl Client {
 
         match response[1] {
             0 => Ok(()),
-            _ => return Err(Socks5Error::RequestFailed),
+            _ => Err(Socks5Error::RequestFailed),
         }
     }
 }
