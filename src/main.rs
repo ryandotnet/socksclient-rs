@@ -1,7 +1,7 @@
 use tokio::io;
 use tokio::net::{TcpListener, TcpStream};
 
-mod socks;
+mod socks5;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
@@ -17,10 +17,10 @@ async fn main() -> io::Result<()> {
 async fn handle_client(client: TcpStream) -> io::Result<()> {
     let svr_addr = "175.45.183.112:1709";
 
-    let server = TcpStream::connect(svr_addr).await?;
+    let mut server = TcpStream::connect(svr_addr).await?;
     server.set_nodelay(true)?;
 
-    println!("New connection opened.");
+    socks5::Client::handshake(&mut server).await?;
 
     exchange_data(client, server).await?;
 

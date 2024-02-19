@@ -8,7 +8,7 @@ use tokio::{
 pub struct Client;
 
 impl Client {
-    pub async fn handshake(mut server: TcpStream) -> io::Result<()> {
+    pub async fn handshake(server: &mut TcpStream) -> io::Result<()> {
         let greeting = vec![5, 1, 2];
         server.write_all(&greeting).await?;
 
@@ -16,16 +16,14 @@ impl Client {
         server.read_exact(&mut response).await?;
 
         match response[1] {
-            2 => {
-                Client::authenticate(server).await?;
-            }
+            2 => Client::authenticate(server).await?,
             _ => println!("Handshake Failed!"),
         }
 
         Ok(())
     }
 
-    async fn authenticate(mut server: TcpStream) -> io::Result<()> {
+    async fn authenticate(server: &mut TcpStream) -> io::Result<()> {
         let user = String::from("root");
         let pass = String::from("j3hxgvbdo");
 
@@ -39,14 +37,15 @@ impl Client {
         let mut response = [0, 2];
         server.read_exact(&mut response).await?;
 
-        if response[0] != 0 {
-            println!("Authentication Failed!");
+        match response[0] {
+            0 => Client::request(server).await?,
+            _ => println!("Authentication Failed!"),
         }
 
         Ok(())
     }
 
-    async fn request(mut server: TcpStream) -> io::Result<()> {
+    async fn request(server: &mut TcpStream) -> io::Result<()> {
         let ip = Ipv4Addr::new(103, 100, 36, 63);
         let port: u16 = 1709;
 
