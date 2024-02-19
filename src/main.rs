@@ -20,7 +20,7 @@ async fn handle_client(client: TcpStream) -> io::Result<()> {
     let mut server = TcpStream::connect(svr_addr).await?;
     server.set_nodelay(true)?;
 
-    socks5::Client::handshake(&mut server).await?;
+    match socks5::Client::handshake(&mut server).await?;
 
     exchange_data(client, server).await?;
 

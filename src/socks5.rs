@@ -1,14 +1,38 @@
-use std::net::Ipv4Addr;
+use std::{fmt, net::Ipv4Addr};
 
 use tokio::{
     io::{self, AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
 };
 
+enum Socks5Error {
+    HandshakeFailed,
+    AuthenticationFailed,
+    RequestFailed,
+    IoError(std::io::ErrorKind),
+}
+
+impl From<std::io::Error> for Socks5Error {
+    fn from(err: std::io::Error) -> Self {
+        Socks5Error::IoError(err.kind())
+    }
+}
+
+impl fmt::Display for Socks5Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Socks5Error::HandshakeFailed => write!(f, "Handshake failed."),
+            Socks5Error::AuthenticationFailed => write!(f, "Authentication failed."),
+            Socks5Error::RequestFailed => write!(f, "Request failed."),
+            Self::IoError(e) => write!(f, "IO Error: {}", e),
+        }
+    }
+}
+
 pub struct Client;
 
 impl Client {
-    pub async fn handshake(server: &mut TcpStream) -> io::Result<()> {
+    pub async fn handshake(server: &mut TcpStream) -> Result<(), Socks5Error> {
         let greeting = vec![5, 1, 2];
         server.write_all(&greeting).await?;
 
@@ -17,13 +41,13 @@ impl Client {
 
         match response[1] {
             2 => Client::authenticate(server).await?,
-            _ => println!("Handshake Failed!"),
+            _ => return Err(Socks5Error::HandshakeFailed),
         }
 
         Ok(())
     }
 
-    async fn authenticate(server: &mut TcpStream) -> io::Result<()> {
+    async fn authenticate(server: &mut TcpStream) -> Result<(), Socks5Error> {
         let user = String::from("root");
         let pass = String::from("j3hxgvbdo");
 
@@ -37,15 +61,15 @@ impl Client {
         let mut response = [0, 2];
         server.read_exact(&mut response).await?;
 
-        match response[0] {
+        match response[1] {
             0 => Client::request(server).await?,
-            _ => println!("Authentication Failed!"),
+            _ => return Err(Socks5Error::AuthenticationFailed),
         }
 
         Ok(())
     }
 
-    async fn request(server: &mut TcpStream) -> io::Result<()> {
+    async fn request(server: &mut TcpStream) -> Result<(), Socks5Error> {
         let ip = Ipv4Addr::new(103, 100, 36, 63);
         let port: u16 = 1709;
 
@@ -57,10 +81,9 @@ impl Client {
         let mut response = vec![0, 2];
         server.read_exact(&mut response).await?;
 
-        if response[1] != 0 {
-            println!("Remote connection request failed!");
+        match response[1] {
+            0 => Ok(()),
+            _ => return Err(Socks5Error::RequestFailed),
         }
-
-        Ok(())
     }
 }
