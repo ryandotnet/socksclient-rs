@@ -1,39 +1,15 @@
-use std::{error::Error, fmt, net::Ipv4Addr};
+use anyhow::{anyhow, Result};
+use std::net::Ipv4Addr;
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
 };
 
-#[derive(Debug)]
-pub enum Socks5Error {
-    HandshakeFailed,
-    AuthenticationFailed,
-    RequestFailed,
-}
-
-impl Error for Socks5Error {}
-
-// impl From<std::io::Error> for Socks5Error {
-//     fn from(err: std::io::Error) -> Self {
-//         Socks5Error::IoError(err.kind())
-//     }
-// }
-
-impl fmt::Display for Socks5Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::HandshakeFailed => write!(f, "Handshake failed."),
-            Self::AuthenticationFailed => write!(f, "Authentication failed."),
-            Self::RequestFailed => write!(f, "Request failed."),
-        }
-    }
-}
-
 pub struct Client;
 
 impl Client {
-    pub async fn handshake(server: &mut TcpStream) -> Result<(), Box<dyn Error>> {
+    pub async fn handshake(server: &mut TcpStream) -> Result<()> {
         let greeting = vec![5, 1, 2];
         server.write_all(&greeting).await?;
 
@@ -41,14 +17,14 @@ impl Client {
         server.read_exact(&mut response).await?;
 
         match response[1] {
-            3 => Client::authenticate(server).await?,
-            _ => return Err(Box::new(Socks5Error::HandshakeFailed)),
+            2 => Client::authenticate(server).await?,
+            _ => return Err(anyhow!("Handshake failed.")),
         };
 
         Ok(())
     }
 
-    async fn authenticate(server: &mut TcpStream) -> Result<(), Box<dyn Error>> {
+    async fn authenticate(server: &mut TcpStream) -> Result<()> {
         let user = String::from("root");
         let pass = String::from("j3hxgvbdo");
 
@@ -64,13 +40,13 @@ impl Client {
 
         match response[1] {
             0 => Client::request(server).await?,
-            _ => return Err(Box::new(Socks5Error::AuthenticationFailed)),
+            _ => return Err(anyhow!("Authentication failed.")),
         }
 
         Ok(())
     }
 
-    async fn request(server: &mut TcpStream) -> Result<(), Box<dyn Error>> {
+    async fn request(server: &mut TcpStream) -> Result<()> {
         let ip = Ipv4Addr::new(103, 100, 36, 63);
         let port: u16 = 1709;
 
@@ -84,7 +60,7 @@ impl Client {
 
         match response[1] {
             0 => Ok(()),
-            _ => Err(Box::new(Socks5Error::RequestFailed)),
+            _ => Err(anyhow!("Request failed.")),
         }
     }
 }
