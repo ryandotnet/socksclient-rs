@@ -1,4 +1,4 @@
-use std::{fmt, net::Ipv4Addr};
+use std::{error::Error, fmt, net::Ipv4Addr};
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -10,16 +10,15 @@ pub enum Socks5Error {
     HandshakeFailed,
     AuthenticationFailed,
     RequestFailed,
-    IoError(std::io::ErrorKind),
 }
 
-//impl std::error::Error for Socks5Error {}
+impl Error for Socks5Error {}
 
-impl From<std::io::Error> for Socks5Error {
-    fn from(err: std::io::Error) -> Self {
-        Socks5Error::IoError(err.kind())
-    }
-}
+// impl From<std::io::Error> for Socks5Error {
+//     fn from(err: std::io::Error) -> Self {
+//         Socks5Error::IoError(err.kind())
+//     }
+// }
 
 impl fmt::Display for Socks5Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -27,7 +26,6 @@ impl fmt::Display for Socks5Error {
             Self::HandshakeFailed => write!(f, "Handshake failed."),
             Self::AuthenticationFailed => write!(f, "Authentication failed."),
             Self::RequestFailed => write!(f, "Request failed."),
-            Self::IoError(error) => write!(f, "IO Error: {}", error),
         }
     }
 }
@@ -35,7 +33,7 @@ impl fmt::Display for Socks5Error {
 pub struct Client;
 
 impl Client {
-    pub async fn handshake(server: &mut TcpStream) -> Result<(), Socks5Error> {
+    pub async fn handshake(server: &mut TcpStream) -> Result<(), Box<dyn Error>> {
         let greeting = vec![5, 1, 2];
         server.write_all(&greeting).await?;
 
@@ -43,14 +41,14 @@ impl Client {
         server.read_exact(&mut response).await?;
 
         match response[1] {
-            2 => Client::authenticate(server).await?,
-            _ => return Err(Socks5Error::HandshakeFailed),
+            3 => Client::authenticate(server).await?,
+            _ => return Err(Box::new(Socks5Error::HandshakeFailed)),
         };
 
         Ok(())
     }
 
-    async fn authenticate(server: &mut TcpStream) -> Result<(), Socks5Error> {
+    async fn authenticate(server: &mut TcpStream) -> Result<(), Box<dyn Error>> {
         let user = String::from("root");
         let pass = String::from("j3hxgvbdo");
 
@@ -66,13 +64,13 @@ impl Client {
 
         match response[1] {
             0 => Client::request(server).await?,
-            _ => return Err(Socks5Error::AuthenticationFailed),
+            _ => return Err(Box::new(Socks5Error::AuthenticationFailed)),
         }
 
         Ok(())
     }
 
-    async fn request(server: &mut TcpStream) -> Result<(), Socks5Error> {
+    async fn request(server: &mut TcpStream) -> Result<(), Box<dyn Error>> {
         let ip = Ipv4Addr::new(103, 100, 36, 63);
         let port: u16 = 1709;
 
@@ -86,7 +84,7 @@ impl Client {
 
         match response[1] {
             0 => Ok(()),
-            _ => Err(Socks5Error::RequestFailed),
+            _ => Err(Box::new(Socks5Error::RequestFailed)),
         }
     }
 }

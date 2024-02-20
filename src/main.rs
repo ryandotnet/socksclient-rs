@@ -9,35 +9,42 @@ use tokio::net::{TcpListener, TcpStream};
 mod socks5;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<(), Box<dyn Error>> {
     let listener = TcpListener::bind("127.0.0.1:2606").await?;
     println!("Listening on: {}\n", listener.local_addr()?);
 
     loop {
-        let (client, _) = listener.accept().await?;
-        let _ = match handle_client(client).await {
+        let (client_stream, _) = listener.accept().await?;
+        let _ = match handle_client(client_stream).await {
             Ok(_) => Ok(()),
             Err(err) => {
-                match err.kind() {
-                    ErrorKind::TimedOut => {
-                        eprintln!("Failed to connect to server: Connection timed out.")
-                    }
-                    _ => eprintln!("Failed to connect to server. Error: {}", err),
+                if err.downcast_ref::<Socks5Error>().is_some() {
+                    println!("Socks Error: {}", err);
                 }
+
+                if let Some(io_error) = err.downcast_ref::<std::io::Error>() {
+                    match io_error.kind() {
+                        ErrorKind::TimedOut => {
+                            println!("Failed to connect to server. Connection timed out.")
+                        }
+                        _ => println!("Failed to connect to server. IO Error: {}", io_error),
+                    }
+                }
+
                 Err(err)
             }
         };
     }
 }
 
-async fn handle_client(client: TcpStream) -> io::Result<()> {
-    let server_addr = "69.45.183.112:1709";
+async fn handle_client(client_stream: TcpStream) -> Result<(), Box<dyn Error>> {
+    let server_addr = "175.45.183.112:1709";
 
-    let server = TcpStream::connect(server_addr).await?;
+    let mut server_stream = TcpStream::connect(server_addr).await?;
 
-    // socks5::Client::handshake(&mut server).await?;
+    socks5::Client::handshake(&mut server_stream).await?;
 
-    // exchange_data(client, server).await?;
+    exchange_data(client_stream, server_stream).await?;
 
     Ok(())
 }
