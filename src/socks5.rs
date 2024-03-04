@@ -13,7 +13,7 @@ impl Client {
         let greeting = vec![5, 1, 2];
         server.write_all(&greeting).await?;
 
-        let mut response = [0, 2];
+        let mut response = [0; 2];
         server.read_exact(&mut response).await?;
 
         match response[1] {
@@ -25,8 +25,8 @@ impl Client {
     }
 
     async fn authenticate(server: &mut TcpStream) -> Result<()> {
-        let user = String::from("root");
-        let pass = String::from("j3hxgvbdo");
+        let user = String::from("user");
+        let pass = String::from("pass");
 
         let mut request = vec![1];
         request.push(user.len() as u8);
@@ -35,7 +35,7 @@ impl Client {
         request.extend_from_slice(pass.as_bytes());
         server.write_all(&request).await?;
 
-        let mut response = [0, 2];
+        let mut response = [0; 2];
         server.read_exact(&mut response).await?;
 
         match response[1] {
@@ -47,15 +47,15 @@ impl Client {
     }
 
     async fn request(server: &mut TcpStream) -> Result<()> {
-        let ip = Ipv4Addr::new(103, 100, 36, 63);
-        let port: u16 = 1709;
+        let ip = Ipv4Addr::new(8, 8, 8, 8);
+        let port: u16 = 80;
 
         let mut request = vec![5, 1, 0, 1];
         request.extend_from_slice(&ip.octets());
         request.extend_from_slice(&port.to_be_bytes());
         server.write_all(&request).await?;
 
-        let mut response = vec![0, 2];
+        let mut response = vec![0; 2];
         server.read_exact(&mut response).await?;
 
         match response[1] {

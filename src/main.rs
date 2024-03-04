@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
 }
 
 async fn handle_client(client_stream: TcpStream) -> Result<()> {
-    let server_addr = "175.45.183.112:1709";
+    let server_addr = "50.50.50.50:5050";
     let mut server_stream: TcpStream =
         match tokio::time::timeout(Duration::from_millis(250), TcpStream::connect(server_addr))
             .await
